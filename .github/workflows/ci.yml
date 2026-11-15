@@ -1,0 +1,66 @@
+name: CI Java
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-e-testes:
+    name: build-e-testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: lexflow_ci
+          POSTGRES_USER: lexflow_ci
+          # Credencial descartável, exclusiva deste banco de testes.
+          POSTGRES_PASSWORD: lexflow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lexflow_ci -d lexflow_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/lexflow_ci
+      TEST_DATABASE_USERNAME: lexflow_ci
+      TEST_DATABASE_PASSWORD: lexflow_ci
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configurar Java 21 e cache Maven
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compilar, testar e empacotar
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Mostrar relatórios em caso de falha
+        if: failure()
+        shell: bash
+        run: |
+          if [ -d target/surefire-reports ]; then
+            find target/surefire-reports -name '*.txt' -exec cat {} +
+          fi
