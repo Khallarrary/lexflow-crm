@@ -1,0 +1,19 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Java e ferramentas de build
+*.class
+target/
+build/
+.gradle/
+
+# Configurações locais e credenciais
+.env
+.env.*
+!.env.example
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
