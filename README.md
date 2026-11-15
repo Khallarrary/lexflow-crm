@@ -4,13 +4,14 @@ CRM jurídico colaborativo para aprender desenvolvimento em equipe. O backend é
 
 O cadastro de clientes é a primeira funcionalidade completa e serve de referência para as próximas contribuições. Este guia explica como executar o projeto e como seguir suas camadas.
 
-**Trabalho em equipe:** veja o [guia de colaboração, revisão de PRs e CI](docs/colaboracao-e-ci.md) para configurar colaboradores, proteger a main e executar a esteira com PostgreSQL temporário. Os arquivos da CI estão preparados no repositório; regras de aprovação precisam ser ativadas nas configurações do GitHub.
+**Trabalho em equipe:** as mudanças entram por branch e Pull Request para a `main`. A revisão por um colega é um acordo da equipe, sem exigência técnica de aprovação. Veja o [fluxo de contribuição abaixo](#branches-pull-requests-e-revisão) e o [guia de configuração do GitHub e CI](docs/colaboracao-e-ci.md).
 
-**Revisão automática:** o [guia do Sourcery](docs/sourcery.md) contém a ativação pelo GitHub App e as regras propostas para revisar nossas camadas. A instalação e o cadastro dessas regras no painel ainda precisam ser concluídos; a aprovação de um colega continua obrigatória no fluxo da equipe.
+**Revisão automática:** o Sourcery foi conectado ao repositório e as regras das camadas foram cadastradas no painel. Ele sugere melhorias nos PRs; os integrantes avaliam os apontamentos e continuam responsáveis pelo código.
 
 ## Índice
 
 - [Estado atual](#estado-atual)
+- [Branches, Pull Requests e revisão](#branches-pull-requests-e-revisão)
 - [Tecnologias](#tecnologias)
 - [Como executar](#como-executar)
 - [Como testar](#como-testar)
@@ -37,6 +38,102 @@ Implementado e testado manualmente:
 Também estão incluídos dois testes de integração do cadastro e o workflow **CI Java**, que executa compilação, testes e empacotamento com PostgreSQL temporário. A execução remota começa depois de enviar o workflow ao GitHub.
 
 **Ponto de parada:** apenas o cadastro está implementado. Busca por ID, listagem, edição, exclusão, usuários e login ainda não estão implementados. Demanda, Atendimento e Tarefa são entidades planejadas. O frontend será desenvolvido posteriormente; React ou Angular ainda será definido.
+
+## Branches, Pull Requests e revisão
+
+O objetivo é praticar o trabalho em equipe sem concentrar as aprovações ou os
+merges no proprietário do repositório.
+
+```text
+Issue → branch de trabalho → commits → push da branch → PR para main
+      → CI + sugestões do Sourcery + revisão combinada com um colega → merge
+```
+
+### O que é bloqueio técnico e o que é acordo da equipe
+
+| Item | Como funciona |
+|---|---|
+| Push direto na main | Bloqueado pelo ruleset; use uma branch e um PR |
+| Aprovação de colega | Acordo da equipe: peça e aguarde a revisão, mas o ruleset deve exigir 0 aprovações |
+| Aprovar o próprio PR | O GitHub não permite essa ação, mesmo com 0 aprovações exigidas |
+| Fazer merge do próprio PR | Permitido a quem tem escrita, desde que os demais requisitos do repositório estejam satisfeitos |
+| Aprovação automática do Sourcery | Deve ficar desativada; o bot auxilia com análise e comentários |
+| Check build-e-testes | Executa build e testes; só bloqueia merge quando adicionado como obrigatório ao ruleset |
+
+**Aprovar não é fazer merge.** Aprovar registra o parecer de quem revisou o
+código. Fazer merge integra os commits na branch de destino. Com zero aprovações
+exigidas, o autor pode integrar seu próprio PR sem uma aprovação formal; o acordo
+de pedir revisão e discutir o código do colega continua valendo para todos.
+
+### Configuração definida para a main
+
+Em **Settings → Rules → Rulesets → protecao-main**, mantenha a regra ativa,
+direcionada à `main`, com bypass vazio. A exigência de PR continua marcada.
+Use **Required approvals = 0** e desmarque **Require approval of the most recent
+reviewable push**. **Dismiss stale pull request approvals** também fica desmarcado.
+Não exija aprovação de Code Owners ou de times específicos nesse fluxo.
+
+Mantenha bloqueios de force push e exclusão da main. **Restrict updates** deve
+ficar desmarcado: exigir PR já controla a entrada das mudanças. A resolução de
+conversas permanece uma condição separada da quantidade de aprovações.
+
+O ruleset foi criado inicialmente com uma aprovação obrigatória. **Se ainda
+estiver assim no GitHub, ajuste essas opções e salve:** atualizar este README
+não modifica as configurações remotas. A última configuração com zero aprovações
+precisa ser conferida no painel.
+
+Quando a CI executar pela primeira vez, adicione **build-e-testes** em **Require
+status checks to pass**. O workflow existir ou executar não torna o check
+obrigatório automaticamente. O Sourcery também não libera o merge por conta
+própria: regras de conversas, CI e demais condições continuam independentes.
+
+### Sourcery no dia a dia
+
+O Sourcery revisa PRs e comenta possíveis melhorias de código, arquitetura e
+migrations. Suas configurações ficam no painel do serviço, em **Repo settings**:
+revisão habilitada, português, perfil Balanced e aprovação automática desativada.
+As regras personalizadas seguem as responsabilidades das camadas descritas neste
+README. Para alterações nessas regras, use **Review rules** no painel.
+
+Ao abrir um PR pronto para revisão, confira se o bot publicou sua análise. Se
+precisar solicitar uma nova revisão, comente no PR:
+
+```text
+@sourcery-ai review
+```
+
+Avalie as sugestões antes de aplicá-las. A análise automática pode errar e não
+substitui os testes nem a revisão combinada com um colega. Para repositórios
+privados, confira o plano contratado ou o período de teste no serviço.
+
+### Passo a passo no GitHub Desktop
+
+1. Antes de começar, atualize a main local e crie uma branch em **Branch → New branch**.
+2. Use um nome descritivo, como `feat/cadastro-demanda` ou `ci/configurar-esteira`.
+3. Faça as alterações e os commits nessa branch.
+4. Clique em **Publish branch** no primeiro envio, ou **Push origin** nos seguintes.
+5. Use **Create Pull Request**, com sua branch como origem e `main` como destino.
+6. Descreva o que mudou e como foi testado. Solicite revisão de outro integrante.
+7. Confira a CI e as sugestões do Sourcery. Converse com o colega e aplique as correções necessárias.
+8. Faça o merge quando o trabalho estiver pronto e os requisitos técnicos estiverem satisfeitos, seguindo o acordo de revisão da equipe.
+
+Colaboradores com escrita podem revisar e fazer merge; não precisam receber
+acesso administrativo. O autor pode fazer o merge depois desse processo, sem
+precisar ser o proprietário do repositório.
+
+### Se você já commitou na main e o push foi recusado
+
+A mensagem **Changes must be made through a pull request** indica que a proteção
+funcionou. O commit permanece salvo localmente.
+
+No GitHub Desktop, crie uma nova branch **a partir da main local atual**, que
+contém o commit pendente. Publique essa branch e abra o PR. Não é necessário
+refazer o commit, usar force push ou desativar a proteção. Se houver outros
+commits locais pendentes, eles também estarão na branch; confira o diff do PR.
+
+A proteção é aplicada no GitHub: ela não impede editar arquivos ou criar commits
+na main local. Por isso, criar a branch antes de trabalhar continua sendo o
+hábito recomendado.
 
 ## Tecnologias
 
