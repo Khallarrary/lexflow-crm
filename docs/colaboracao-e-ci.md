@@ -9,13 +9,14 @@ Issue → branch de trabalho → commits → Pull Request para main
 
 Aprovar é registrar uma revisão em **Files changed → Review changes → Approve**.
 Fazer merge é integrar o PR na branch de destino. São ações diferentes: o autor
-pode fazer o merge depois da revisão, se as regras e permissões permitirem, mas
-não pode aprovar seu próprio PR. Se a equipe preferir que o revisor também faça
-o merge, isso é uma convenção adicional de trabalho.
+pode fazer o merge do próprio PR, se as regras e permissões permitirem, mas
+não pode aprovar seu próprio PR. Pedir e aguardar a revisão de um colega é
+um acordo da equipe; a configuração definida exige **0 aprovações**.
 
-O GitHub impede o autor de aprovar seu próprio PR. Para impedir também o merge
-sem revisão e a escrita direta na main, é necessário configurar a proteção no
-GitHub. Arquivos deste repositório, sozinhos, não ativam essa proteção.
+O GitHub impede o autor de aprovar seu próprio PR, independentemente das regras.
+Nosso bloqueio técnico exige PR e impede escrita direta na main; não exige uma
+aprovação formal para o merge. Arquivos deste repositório, sozinhos, não ativam
+nem alteram essa proteção no GitHub.
 
 ## 1. Dar acesso aos integrantes
 
@@ -28,7 +29,7 @@ No repositório **Khallarrary/lexflow-crm**:
 Este repositório pertence a uma conta pessoal. Colaboradores têm acesso de
 escrita: podem criar branches, revisar PRs e fazer merge quando as regras forem
 satisfeitas. Não precisam ser administradores nem proprietários para que suas
-aprovações contem como revisão obrigatória.
+aprovações sejam usadas nas revisões da equipe.
 
 Se no futuro o projeto for para uma organização, dê à equipe a função **Write**
 no repositório; funções administrativas não são necessárias para revisar código.
@@ -65,23 +66,31 @@ ruleset**. Configure:
 
 | Campo ou regra | Valor sugerido |
 |---|---|
-| Ruleset name | main-revisao-e-ci |
+| Ruleset name | protecao-main |
 | Enforcement status | Active |
 | Bypass list | Vazia, para ninguém ficar dispensado, inclusive o proprietário |
 | Target branches | Include by pattern: main |
 | Restrict deletions | Marcado |
 | Block force pushes | Marcado |
 | Require a pull request before merging | Marcado |
-| Required approvals | 1 |
-| Dismiss stale pull request approvals when new commits are pushed | Marcado |
-| Require approval of the most recent reviewable push | Marcado |
+| Required approvals | 0 |
+| Dismiss stale pull request approvals when new commits are pushed | Desmarcado |
+| Require approval of the most recent reviewable push | Desmarcado |
+| Require review from Code Owners / specific teams | Desmarcado |
+| Restrict updates | Desmarcado |
 | Require conversation resolution before merging | Marcado |
-| Require status checks to pass | Marcado; adicionar build-e-testes |
-| Require branches to be up to date before merging | Marcado |
+| Require status checks to pass | Ativar e adicionar build-e-testes após sua primeira execução |
+| Require branches to be up to date before merging | Marcar ao ativar os status checks |
 
 Salve o ruleset. Não configure restrição de criação/atualização por usuário que
 concentre todo o merge no proprietário; o objetivo é permitir que colaboradores
-integrem PRs quando revisão e CI forem satisfeitas.
+integrem PRs quando as condições técnicas forem satisfeitas, mantendo a revisão
+como compromisso da equipe.
+
+O primeiro ruleset foi criado com uma aprovação obrigatória. Se ele ainda
+estiver assim no painel, edite-o conforme a tabela e salve. A mudança para zero
+aprovações foi definida depois; esta documentação não confirma que o ajuste
+remoto já foi salvo.
 
 Não é necessário exigir CODEOWNERS para esta regra. Um CODEOWNERS apontando
 somente para o proprietário, somado à exigência de aprovação dos code owners,
@@ -90,17 +99,16 @@ poderia voltar a concentrar as aprovações nele.
 **O que as regras fazem:**
 
 - Exigem que as mudanças cheguem por PR, em vez de push direto na main.
-- Exigem aprovação de outro integrante com acesso de escrita.
-- Invalidam aprovações antigas quando novos commits de código são enviados.
-- Exigem que alguém diferente de quem enviou o último push revisável aprove.
-- Bloqueiam merge com conversas pendentes ou CI falhando.
-- Exigem atualizar a branch quando ela estiver atrás da main.
+- Permitem merge pelo autor sem aprovação formal, desde que as outras condições sejam satisfeitas.
+- Mantêm a revisão do colega como acordo de colaboração.
+- Bloqueiam merge com conversas pendentes, conforme a regra de resolução.
+- Depois de exigir o check build-e-testes, bloqueiam merge com esse check pendente ou falhando.
+- Com a opção de atualização ativada, exigem atualizar a branch quando ela estiver atrás da main.
 
-**Atenção ao trabalho em dupla:** se o revisor enviar correções diretamente na
-branch do autor, a exigência de revisar o último push pode precisar de uma
-terceira pessoa: o autor continua impedido de aprovar o próprio PR, e quem
-enviou o último push não satisfaz essa aprovação. Prefiram sugestões na revisão
-para o autor aplicar e o colega revisar novamente.
+**Por que desmarcar a aprovação do último push:** essa opção pode exigir outra
+aprovação mesmo com a contagem geral em zero. Não faz parte do bloqueio técnico
+desejado. Revisões adicionais após correções continuam sendo combinadas pelos
+integrantes.
 
 Mesmo com bypass vazio, o proprietário continua podendo editar as configurações
 do repositório. A regra controla o fluxo normal de contribuição, não remove os
@@ -110,11 +118,11 @@ poderes administrativos da conta.
 
 Em um PR de teste para main, confira:
 
-1. Sem aprovação, o merge aparece bloqueado por revisão pendente.
-2. Uma aprovação de colega com escrita satisfaz a exigência de revisão.
-3. Um novo commit de código exige revisão atualizada.
-4. O check build-e-testes precisa ficar verde.
-5. Somente depois de todas as exigências o merge fica disponível.
+1. Um push direto na main é rejeitado: mudanças precisam chegar por PR.
+2. O PR não exige aprovação apenas por estar sem review; a contagem deve ser zero.
+3. O autor pode fazer merge se tiver escrita e todas as outras condições estiverem satisfeitas.
+4. Quando adicionado como obrigatório, o check build-e-testes precisa ficar verde.
+5. Conversas pendentes ainda precisam ser resolvidas. Uma revisão com pedido de alterações também deve ser discutida; zero aprovações não dispensa conferir os demais bloqueios exibidos pelo GitHub.
 
 Não faça force push ou alterações destrutivas na main para testar as regras.
 
@@ -172,10 +180,10 @@ ou produção não é parte do fluxo suportado.
 
 ## Referências
 
-Para complementar a revisão humana com análise automática, siga o
-[guia de ativação do Sourcery e regras de arquitetura](sourcery.md).
-A instalação do app é uma etapa separada da esteira Java e não dispensa a
-aprovação de outro integrante.
+Para usar a análise automática no fluxo de revisão, veja
+[Sourcery no dia a dia](../README.md#sourcery-no-dia-a-dia).
+A instalação do app é uma etapa separada da esteira Java. A revisão de outro
+integrante permanece como acordo da equipe, sem aprovação obrigatória no ruleset.
 
 - [Convidar colaboradores de repositório pessoal](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/inviting-collaborators-to-a-personal-repository)
 - [Revisar PRs e restrição de autoaprovação](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request)

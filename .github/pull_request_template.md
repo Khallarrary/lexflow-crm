@@ -16,4 +16,9 @@
 - [ ] Registrei mudanças de banco em uma nova migration, quando necessário.
 - [ ] Atualizei a documentação afetada.
 - [ ] Não incluí credenciais locais.
-- [ ] Solicitei revisão de outro integrante; não vou integrar antes da aprovação e da CI.
+- [ ] Solicitei revisão de outro integrante, conforme o acordo da equipe.
+- [ ] Conferi a CI e discuti os apontamentos relevantes do Sourcery e dos colegas.
+
+<!-- Revisão por colega é um acordo da equipe. O ruleset exige PR, com 0
+aprovações obrigatórias; o autor pode fazer merge quando os demais requisitos
+forem satisfeitos. O GitHub não permite aprovar o próprio PR. -->
