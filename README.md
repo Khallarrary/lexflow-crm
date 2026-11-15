@@ -11,6 +11,7 @@ O cadastro de clientes é a primeira funcionalidade completa e serve de referên
 ## Índice
 
 - [Estado atual](#estado-atual)
+- [Multi-tenancy: um escritório por tenant](#multi-tenancy-um-escritório-por-tenant)
 - [Branches, Pull Requests e revisão](#branches-pull-requests-e-revisão)
 - [Tecnologias](#tecnologias)
 - [Como executar](#como-executar)
@@ -37,7 +38,91 @@ Implementado e testado manualmente:
 
 Também estão incluídos dois testes de integração do cadastro e o workflow **CI Java**, que executa compilação, testes e empacotamento com PostgreSQL temporário. A execução remota começa depois de enviar o workflow ao GitHub.
 
-**Ponto de parada:** apenas o cadastro está implementado. Busca por ID, listagem, edição, exclusão, usuários e login ainda não estão implementados. Demanda, Atendimento e Tarefa são entidades planejadas. O frontend será desenvolvido posteriormente; React ou Angular ainda será definido.
+**Ponto de parada:** apenas o cadastro está implementado. Busca por ID, listagem, edição, exclusão, usuários e login ainda não estão implementados. Escritorio e o isolamento multi-tenant estão planejados na issue #12; o cadastro atual ainda não separa dados por escritório. Demanda, Atendimento e Tarefa também são entidades planejadas. O frontend será desenvolvido posteriormente; React ou Angular ainda será definido.
+
+## Multi-tenancy: um escritório por tenant
+
+**Decisão de arquitetura, ainda não implementada:** cada escritório jurídico
+será um tenant. A entidade `Escritorio` representa a organização que usa o CRM;
+`Cliente` continua sendo a pessoa física ou jurídica atendida por ela.
+
+Manteremos o monólito em camadas, com um PostgreSQL e tabelas compartilhadas.
+Os registros de negócio terão `escritorio_id` para identificar seu tenant.
+A primeira entrega desse modelo está na
+[issue #12 — Escritorio e isolamento de clientes](https://github.com/Khallarrary/lexflow-crm/issues/12).
+
+### Modelo inicial planejado
+
+| Entidade | Campos ou relacionamento |
+|---|---|
+| Escritorio | `id` gerado pelo banco, `nome` obrigatório e `ativo` inicialmente verdadeiro |
+| Cliente | Pertence obrigatoriamente a um escritório |
+| Demanda | Pertence a um escritório e a um cliente desse mesmo escritório |
+| Atendimento | Pertence a um escritório, com cliente e demanda opcional do mesmo escritório |
+| Tarefa | Pertence a um escritório e a uma demanda dele |
+
+```mermaid
+erDiagram
+    ESCRITORIO ||--o{ CLIENTE : possui
+    ESCRITORIO ||--o{ DEMANDA : possui
+    ESCRITORIO ||--o{ ATENDIMENTO : possui
+    ESCRITORIO ||--o{ TAREFA : possui
+    CLIENTE ||--o{ DEMANDA : possui
+    CLIENTE ||--o{ ATENDIMENTO : recebe
+    DEMANDA |o--o{ ATENDIMENTO : contextualiza
+    DEMANDA ||--o{ TAREFA : possui
+```
+
+O diagrama descreve o modelo de destino. Cada vínculo também deve respeitar o
+mesmo escritório; as relações do diagrama, sozinhas, não garantem essa condição.
+
+### Primeira implementação
+
+- Criar `domain.model.Escritorio` e `infra.repository.EscritorioRepository`.
+- Criar nova migration para a tabela `escritorio` e o vínculo obrigatório de `cliente`.
+- Associar explicitamente os cadastros existentes a um escritório inicial, preservando IDs e dados. Não editar a V1 já aplicada.
+- Ajustar CPF/CNPJ para unicidade composta por `(escritorio_id, cpf_cnpj)`. O mesmo documento pode existir em escritórios diferentes.
+- Implementar o contexto do escritório atual e restringir consultas, gravações e verificações de duplicidade a ele.
+- Testar com dois escritórios para comprovar o isolamento.
+
+Não é necessário um CRUD público de escritórios nesta primeira entrega. O
+escritório inicial pode ser preparado pelo fluxo controlado de configuração.
+
+### Isolamento e contexto do escritório
+
+**Adicionar uma entidade e uma FK não conclui o multi-tenancy.** Buscar somente
+pelo ID sem aplicar o escritório, listar sem filtro ou aceitar um vínculo com
+registro de outro tenant pode expor ou misturar dados.
+
+A implementação deve garantir:
+
+- O escritório é determinado pelo contexto confiável do backend; o consumidor não escolhe nem altera o tenant no corpo do cadastro.
+- Ausência de contexto, escritório inválido ou inativo impede a operação; não resulta em uma consulta global.
+- Busca por ID, paginação, atualização e duplicidade respeitam o tenant atual.
+- Demanda, Atendimento e Tarefa não podem se relacionar com registros de outro escritório, com constraints de banco que reforcem essa integridade.
+- O contexto não vaza ao reutilizar threads ou conexões entre operações.
+- Testes usam pelo menos dois escritórios, incluindo tentativas de acessar ou alterar dados do outro.
+
+### Desenvolvimento sem login e acesso real
+
+Enquanto não houver autenticação, usar um **escritório fixo configurado no
+servidor, exclusivamente em perfil local/dev**. O mecanismo e as propriedades
+serão definidos na issue #12; o projeto atual ainda não oferece essa configuração.
+Os testes poderão estabelecer contextos de escritórios distintos de forma
+controlada, sem criar um mecanismo público para trocar de tenant.
+
+Antes de disponibilizar acesso real a vários escritórios, implementar login e
+verificar o vínculo do usuário com o escritório selecionado. Um `tenantId` em
+header, URL ou JSON não é, por si só, autorização para acessar aquele escritório.
+O modo local sem login não deve ser tratado como isolamento seguro para usuários
+externos.
+
+### Ordem do backlog
+
+Priorizar a base da [issue #12](https://github.com/Khallarrary/lexflow-crm/issues/12)
+antes de integrar as evoluções de clientes (#4 a #7) e as entidades seguintes
+(#8 a #10). Tratamento de erros e Maven Wrapper podem avançar em paralelo,
+combinando os pontos de integração com essa base.
 
 ## Branches, Pull Requests e revisão
 
@@ -470,6 +555,7 @@ Observe os limites atuais:
 - `@Column(nullable = false)` descreve o mapeamento; não substitui `@NotBlank`. O `NOT NULL` do banco também não rejeita espaços.
 - CPF/CNPJ, telefone, e-mail e observações são opcionais. `@Size` e `@Email` aceitam `null`.
 - CPF/CNPJ só tem limite de tamanho e unicidade do texto armazenado. **Ainda não há normalização nem validação dos dígitos verificadores.** Formas diferentes do mesmo documento podem escapar da comparação textual.
+- A unicidade atual de documento é global, conforme a V1. A issue #12 deve substituí-la por unicidade por escritório; a issue #6 deve usar esse escopo ao normalizar e tratar duplicidade.
 - A restrição única permite vários valores `NULL`; uma string vazia não é `NULL`.
 - Uma consulta de duplicidade no service não substitui a restrição única no banco.
 - Ainda não há handler próprio para duplicidade; não presuma que a API já retorna 409 nesses casos.
@@ -553,6 +639,7 @@ Antes de enviar a contribuição, confira:
 - O service evita DTOs da API e detalhes HTTP?
 - O domínio evita dependências das outras camadas do projeto?
 - Mudanças nas tabelas estão em uma nova migration?
+- Consultas e vínculos respeitam o escritório atual, conforme a base multi-tenant planejada?
 - Contrato e erros foram documentados?
 - O comportamento foi verificado e não há credenciais locais no Git?
 
@@ -573,14 +660,15 @@ Antes de enviar a contribuição, confira:
 
 ## Próximos passos
 
+- Priorizar Escritorio, vínculo de Cliente e isolamento por escritório — [issue #12](https://github.com/Khallarrary/lexflow-crm/issues/12).
 - Busca por ID com 200 e 404.
 - Listagem paginada, edição e definição da estratégia de exclusão.
-- Normalização e validação de CPF/CNPJ e tratamento de duplicidade.
+- Normalização e validação de CPF/CNPJ e tratamento de duplicidade por escritório.
 - Respostas de erro padronizadas.
 - Ampliar os testes automatizados conforme os comportamentos evoluírem.
 - Maven Wrapper para uniformizar a execução pela equipe.
 - Demanda, Atendimento e Tarefa.
-- Usuários, autenticação e permissões em uma etapa posterior.
+- Usuários, autenticação e vínculo com escritórios antes de oferecer acesso multi-tenant real; até lá, somente o modo local controlado descrito acima.
 
 ## Referências
 
