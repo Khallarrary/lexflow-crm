@@ -4,6 +4,10 @@ CRM jurídico colaborativo para aprender desenvolvimento em equipe. O backend é
 
 O cadastro de clientes é a primeira funcionalidade completa e serve de referência para as próximas contribuições. Este guia explica como executar o projeto e como seguir suas camadas.
 
+**Trabalho em equipe:** veja o [guia de colaboração, revisão de PRs e CI](docs/colaboracao-e-ci.md) para configurar colaboradores, proteger a main e executar a esteira com PostgreSQL temporário. Os arquivos da CI estão preparados no repositório; regras de aprovação precisam ser ativadas nas configurações do GitHub.
+
+**Revisão automática:** o [guia do Sourcery](docs/sourcery.md) contém a ativação pelo GitHub App e as regras propostas para revisar nossas camadas. A instalação e o cadastro dessas regras no painel ainda precisam ser concluídos; a aprovação de um colega continua obrigatória no fluxo da equipe.
+
 ## Índice
 
 - [Estado atual](#estado-atual)
@@ -29,6 +33,8 @@ Implementado e testado manualmente:
 - Cadastro por **POST /clientes**, com DTOs de entrada e saída.
 - Swagger UI para documentação e testes.
 - Resposta **201 Created**, com ID gerado, e registro conferido diretamente no banco.
+
+Também estão incluídos dois testes de integração do cadastro e o workflow **CI Java**, que executa compilação, testes e empacotamento com PostgreSQL temporário. A execução remota começa depois de enviar o workflow ao GitHub.
 
 **Ponto de parada:** apenas o cadastro está implementado. Busca por ID, listagem, edição, exclusão, usuários e login ainda não estão implementados. Demanda, Atendimento e Tarefa são entidades planejadas. O frontend será desenvolvido posteriormente; React ou Angular ainda será definido.
 
@@ -241,7 +247,7 @@ lexflow-crm/
     └── test/java/com/lexflow/
 ```
 
-`api.exception` e `infra.config` estão reservados para implementações futuras. Os `package-info.java` documentam os pacotes. `src/test` ainda não contém testes automatizados. `target` é gerada pelo Maven e não deve ser versionada.
+`api.exception` e `infra.config` estão reservados para implementações futuras. Os `package-info.java` documentam os pacotes. `src/test` contém `ClienteCadastroTest` e a configuração do banco exclusivo de testes. `target` é gerada pelo Maven e não deve ser versionada. O workflow fica em `.github/workflows/ci.yml` e o modelo de PR em `.github/pull_request_template.md`.
 
 <details>
 <summary>Imagem: estrutura no IntelliJ e service atual</summary>
@@ -474,7 +480,7 @@ Antes de enviar a contribuição, confira:
 - Listagem paginada, edição e definição da estratégia de exclusão.
 - Normalização e validação de CPF/CNPJ e tratamento de duplicidade.
 - Respostas de erro padronizadas.
-- Testes automatizados dos comportamentos relevantes.
+- Ampliar os testes automatizados conforme os comportamentos evoluírem.
 - Maven Wrapper para uniformizar a execução pela equipe.
 - Demanda, Atendimento e Tarefa.
 - Usuários, autenticação e permissões em uma etapa posterior.
