@@ -52,7 +52,7 @@ public class Cliente {
     @Column(name = "tipo_pessoa", nullable = false, length = 20)
     private TipoPessoa tipoPessoa;
 
-    @Column(name = "cpf_cnpj", length = 20, unique = true)
+    @Column(name = "cpf_cnpj", length = 20)
     private String cpfCnpj;
 
     @Column(name = "telefone", length = 30)
