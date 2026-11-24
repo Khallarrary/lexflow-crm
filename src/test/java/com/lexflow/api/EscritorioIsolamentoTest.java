@@ -12,9 +12,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.lexflow.app.exception.ClienteDuplicadoException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.UUID;
 
@@ -66,7 +67,7 @@ class EscritorioIsolamentoTest {
         EscritorioContextHolder.definir(escritorioA.getId());
         clienteService.cadastrar(novoCliente("Primeiro Cadastro", documento));
 
-        assertThrows(DataIntegrityViolationException.class, () ->
+        assertThrows(ClienteDuplicadoException.class, () ->
                 clienteService.cadastrar(novoCliente("Segundo Cadastro", documento))
         );
     }

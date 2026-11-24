@@ -1,5 +1,6 @@
 package com.lexflow.api.exception;
 
+import com.lexflow.app.exception.ClienteDuplicadoException;
 import com.lexflow.app.exception.EscritorioAtualIndisponivelException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,22 @@ public class ApiExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(corpo);
+    }
+
+    @ExceptionHandler(ClienteDuplicadoException.class)
+    public ResponseEntity<Map<String, Object>> tratarClienteDuplicado(
+            ClienteDuplicadoException ex) {
+
+        Map<String, Object> corpo = Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.CONFLICT.value(),
+                "error", "Cliente duplicado",
+                "message", ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(corpo);
     }
 }

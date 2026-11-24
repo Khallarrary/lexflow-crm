@@ -8,6 +8,8 @@ import com.lexflow.infra.repository.ClienteRepository;
 import com.lexflow.infra.repository.EscritorioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.lexflow.app.exception.ClienteDuplicadoException;
 
 @Service
 public class ClienteService {
@@ -25,7 +27,21 @@ public class ClienteService {
     public Cliente cadastrar(Cliente cliente) {
         Escritorio escritorio = buscarEscritorioAtual();
         cliente.vincularAoEscritorio(escritorio);
-        return clienteRepository.save(cliente);
+
+        try {
+            return clienteRepository.save(cliente);
+        } catch (DataIntegrityViolationException ex) {
+            if (violacaoDeDocumentoDuplicado(ex)) {
+                throw new ClienteDuplicadoException(
+                        "Já existe um cliente com este CPF/CNPJ neste escritório", ex);
+            }
+            throw ex;
+        }
+    }
+
+    private boolean violacaoDeDocumentoDuplicado(DataIntegrityViolationException ex) {
+        String mensagem = ex.getMostSpecificCause().getMessage();
+        return mensagem != null && mensagem.contains("uk_cliente_escritorio_cpf_cnpj");
     }
 
     private Escritorio buscarEscritorioAtual() {
