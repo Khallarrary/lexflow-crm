@@ -4,12 +4,12 @@ CREATE TABLE escritorio (
                             ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO escritorio (nome, ativo) VALUES ('Escritório Inicial', TRUE);
+INSERT INTO escritorio (nome, ativo) VALUES ('Escritorio Inicial', TRUE);
 
 ALTER TABLE cliente ADD COLUMN escritorio_id BIGINT;
 
 UPDATE cliente
-SET escritorio_id = (SELECT id FROM escritorio WHERE nome = 'Escritório Inicial');
+SET escritorio_id = (SELECT id FROM escritorio WHERE nome = 'Escritorio Inicial');
 
 ALTER TABLE cliente ALTER COLUMN escritorio_id SET NOT NULL;
 

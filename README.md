@@ -33,6 +33,9 @@ Implementado e testado manualmente:
 - Conexão com PostgreSQL e execução de migrations pelo Flyway.
 - Entidade `Cliente`, enum `TipoPessoa` e repository JPA.
 - Cadastro por **POST /clientes**, com DTOs de entrada e saída.
+- - Entidade `Escritorio`, migration de vínculo com `Cliente` e contexto de
+    escritório local (perfil `local`), com o cadastro já respeitando o
+    escritório atual.
 - Swagger UI para documentação e testes.
 - Resposta **201 Created**, com ID gerado, e registro conferido diretamente no banco.
 
@@ -51,7 +54,13 @@ Os registros de negócio terão `escritorio_id` para identificar seu tenant.
 A primeira entrega desse modelo está na
 [issue #12 — Escritorio e isolamento de clientes](https://github.com/Khallarrary/lexflow-crm/issues/12).
 
-### Modelo inicial planejado
+**Status desta entrega:** implementado parcialmente. A entidade `Escritorio`, a
+migration e o vínculo obrigatório de `Cliente` já existem, assim como o
+mecanismo de contexto de escritório descrito abaixo. Ainda faltam: tradução
+dos erros em respostas HTTP padronizadas, testes automatizados com dois
+escritórios e tratamento específico de duplicidade de CPF/CNPJ por escritório.
+
+### Modelo Implementado
 
 | Entidade | Campos ou relacionamento |
 |---|---|
@@ -103,19 +112,30 @@ A implementação deve garantir:
 - O contexto não vaza ao reutilizar threads ou conexões entre operações.
 - Testes usam pelo menos dois escritórios, incluindo tentativas de acessar ou alterar dados do outro.
 
-### Desenvolvimento sem login e acesso real
+#### Desenvolvimento sem login e acesso real
 
-Enquanto não houver autenticação, usar um **escritório fixo configurado no
-servidor, exclusivamente em perfil local/dev**. O mecanismo e as propriedades
-serão definidos na issue #12; o projeto atual ainda não oferece essa configuração.
-Os testes poderão estabelecer contextos de escritórios distintos de forma
-controlada, sem criar um mecanismo público para trocar de tenant.
+Implementado: um escritório fixo, configurado no servidor, habilitado
+exclusivamente no perfil `local`.
 
-Antes de disponibilizar acesso real a vários escritórios, implementar login e
-verificar o vínculo do usuário com o escritório selecionado. Um `tenantId` em
-header, URL ou JSON não é, por si só, autorização para acessar aquele escritório.
-O modo local sem login não deve ser tratado como isolamento seguro para usuários
-externos.
+- O nome do escritório fixo fica em `application-local.properties`, na
+  propriedade `lexflow.dev.escritorio-nome`.
+- Um filtro (`infra.config.EscritorioLocalFilter`), ativo apenas com
+  `@Profile("local")`, busca esse escritório pelo nome a cada requisição —
+  nunca presumindo que o ID é 1 — e só define o contexto se o escritório
+  existir e estiver ativo.
+- O contexto atual fica em `infra.config.EscritorioContextHolder`, que guarda
+  o ID por requisição e é limpo ao final dela, mesmo em caso de erro.
+- Sem o perfil `local` ativo, ou se o escritório configurado não existir ou
+  estiver inativo, o cadastro de cliente falha
+  (`EscritorioAtualIndisponivelException`) em vez de usar um escritório
+  padrão silencioso.
+- Para rodar localmente, ative o perfil com a variável de ambiente
+  `SPRING_PROFILES_ACTIVE=local` na configuração de execução.
+
+Este mecanismo é exclusivo para desenvolvimento local e não deve ser tratado
+como isolamento seguro para usuários externos. Antes de disponibilizar acesso
+real a vários escritórios, é necessário implementar login e verificar o
+vínculo do usuário com o escritório selecionado.
 
 ### Ordem do backlog
 
