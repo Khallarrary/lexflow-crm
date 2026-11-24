@@ -10,22 +10,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.context.annotation.Lazy;
 
 import java.io.IOException;
 
 @Component
-@Profile("local")
+@Profile({"local", "test"})
 public class EscritorioLocalFilter extends OncePerRequestFilter {
 
     private final EscritorioRepository escritorioRepository;
     private final String nomeEscritorioFixo;
 
     public EscritorioLocalFilter(
-            EscritorioRepository escritorioRepository,
+            @Lazy EscritorioRepository escritorioRepository,
             @Value("${lexflow.dev.escritorio-nome}") String nomeEscritorioFixo) {
         this.escritorioRepository = escritorioRepository;
         this.nomeEscritorioFixo = nomeEscritorioFixo;
     }
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
