@@ -8,6 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 @Table(name = "cliente")
@@ -45,6 +48,16 @@ public class Cliente {
         return id;
     }
 
+    public Escritorio getEscritorio() {
+        return escritorio;
+    }
+
+    public void vincularAoEscritorio(Escritorio escritorio) {
+        this.escritorio = escritorio;
+    }
+
+
+
     @Column(name = "nome", nullable = false, length = 200)
     private String nome;
 
@@ -52,7 +65,7 @@ public class Cliente {
     @Column(name = "tipo_pessoa", nullable = false, length = 20)
     private TipoPessoa tipoPessoa;
 
-    @Column(name = "cpf_cnpj", length = 20, unique = true)
+    @Column(name = "cpf_cnpj", length = 20)
     private String cpfCnpj;
 
     @Column(name = "telefone", length = 30)
@@ -63,6 +76,11 @@ public class Cliente {
 
     @Column(name = "observacoes", columnDefinition = "TEXT")
     private String observacoes;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @JoinColumn(name = "escritorio_id", nullable = false)
+    private Escritorio escritorio;
 
     protected Cliente() {
     }
@@ -76,4 +94,6 @@ public class Cliente {
         this.email = email;
         this.observacoes = observacoes;
     }
+
+
 }
